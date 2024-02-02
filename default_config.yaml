@@ -1,0 +1,218 @@
+service: "check_no_carla"
+process_index: 0
+experiment_name: "default_experiment"
+log_level: "INFO"
+job_timeout_seconds: 180
+seed: 12345678
+use_wandb: False
+carla:
+  num_replicas: 1
+  host: "localhost"
+  port: 2000
+  tm_port_offset: 5
+  user: "user"
+  timeout_secs: 200
+  fixed_delta_seconds: 0.5
+  max_substep_delta_time: 0.05
+  max_substeps: 10
+  num_vehicles: 30
+  num_pedestrians: 50
+  ego_camera:
+    name: "sensor.camera.rgb"
+    image_width: 800
+    image_height: 600
+    tick: 0.05
+    x: 1
+    z: 2
+  birdseye_camera:
+    name: "sensor.camera.rgb"
+    image_width: 800
+    image_height: 600
+    tick: 0.05
+    x: -10
+    z: 20
+    pitch: -45
+  depth_camera:
+    name: "sensor.camera.depth"
+    image_width: 800
+    image_height: 600
+    tick: 0.05
+  radar_camera:
+    name: "sensor.other.radar"
+    tick: 0
+    x: 1
+    z: 2
+    horizontal_fov: 60
+    vertical_fov: 60
+    range: 30
+    points_per_second: 3000
+    sensor_tick: 0.05
+    pitch: 0
+common:
+  img_width_resize: 384
+  img_height_resize: 384
+  image_size: 384
+  hidden_size: 768
+  num_heads: 8
+  num_encoder_layers: 6
+  num_decoder_layers: 6
+  patch_size: 16
+  max_caption_length: 285
+  transform_normalize_mean: [0.485, 0.456, 0.406]
+  transform_normalize_std: [0.229, 0.224, 0.225]
+  rulebook:
+    # - name: "pedestrian-collision"
+    #   type: "collision"
+    #   value: 2000
+    #   weight: 1
+    #   level: 0
+    #   actor: "*walker.pedestrian*"
+    # - name: "vehicle-collision"
+    #   type: "collision"
+    #   value: 1000
+    #   weight: 1
+    #   level: 0
+    #   actor: "*vehicle*"
+    - name: "pedestrian-proximity"
+      type: "proximity"
+      value: 200
+      weight: 1
+      level: 1
+      min: 10
+      angle: 45
+      actor: "*walker.pedestrian*"
+    - name: "vehicle-proximity"
+      type: "proximity"
+      value: 100
+      weight: 0.5
+      level: 1
+      actor: "*vehicle*"
+      min: 45
+      angle: 45
+    - name: "velocity"
+      type: "velocity"
+      value: 100
+      weight: 1
+      level: 2
+      min: 10
+      max: 50
+  vocabulary:
+    start_token: "<start>"
+    end_token: "<end>"
+    unknown_token: "<unk>"
+    pad_token: "<pad>"
+    vehicle_tokens: ["car", "truck", "bus"]
+    pedestrian_tokens: ["person", "bicycle"]
+    tokens:
+      [
+        "person",
+        "bicycle",
+        "car",
+        "motorcycle",
+        "airplane",
+        "bus",
+        "train",
+        "truck",
+        "boat",
+        "trafficlight",
+        "firehydrant",
+        "stopsign",
+        "parkingmeter",
+        "bench",
+        "bird",
+        "cat",
+        "dog",
+        "horse",
+        "sheep",
+        "cow",
+        "elephant",
+        "bear",
+        "zebra",
+        "giraffe",
+        "backpack",
+        "umbrella",
+        "handbag",
+        "tie",
+        "suitcase",
+        "frisbee",
+        "skis",
+        "snowboard",
+        "sportsball",
+        "kite",
+        "baseballbat",
+        "baseballglove",
+        "skateboard",
+        "surfboard",
+        "tennisracket",
+        "bottle",
+        "wineglass",
+        "cup",
+        "fork",
+        "knife",
+        "spoon",
+        "bowl",
+        "banana",
+        "apple",
+        "sandwich",
+        "orange",
+        "broccoli",
+        "carrot",
+        "hotdog",
+        "pizza",
+        "donut",
+        "cake",
+        "chair",
+        "couch",
+        "pottedplant",
+        "bed",
+        "diningtable",
+        "toilet",
+        "tv",
+        "laptop",
+        "mouse",
+        "remote",
+        "keyboard",
+        "cellphone",
+        "microwave",
+        "oven",
+        "toaster",
+        "sink",
+        "refrigerator",
+        "book",
+        "clock",
+        "vase",
+        "scissors",
+        "teddybear",
+        "hairdrier",
+        "toothbrush",
+      ]
+pretrain:
+  num_epochs: 100
+  batch_size: 8
+  learning_rate: 0.0001
+  gamma: 0.95
+  data:
+    root_path: "/data/coco/train2017"
+    annFile_path: "/data/coco/annotations/instances_train2017.json"
+    subset_num_images: 0
+  model_save_path: "/models/detection_transfomer_384_full.pth"
+train:
+  num_epochs: 5
+  num_trajectories: 12
+  trajectory_length: 20
+  learning_rate: 0.00005
+  use_baseline: False
+  use_captions: True
+  use_semi_random_actor_generation: True
+  jobs:
+    completion_check_interval_secs: 3
+  model_path: "/models/detection_transfomer_384_full.pth"
+eval:
+  num_trajectories: 20
+  trajectory_length: 600
+  jobs:
+    completion_check_interval_secs: 3
+  model_path: "/models/detection_transfomer_384_full.pth"
+hydra:
+  run:
+    dir: /results/${experiment_name}/hydra_outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
